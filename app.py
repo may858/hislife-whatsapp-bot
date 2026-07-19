@@ -2,6 +2,10 @@ import os
 import requests
 from flask import Flask, request
 
+from sales.conversation import handle_message
+from sales.inventory import create_inventory_file
+from sales.config import BUSINESS_WHATSAPP_NUMBER
+
 app = Flask(__name__)
 
 VERIFY_TOKEN = "hislifepeace123"
@@ -14,6 +18,10 @@ print("ACCESS_TOKEN loaded:", ACCESS_TOKEN is not None)
 print("PHONE_NUMBER_ID:", PHONE_NUMBER_ID)
 
 WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
+
+# Make sure the inventory CSV exists on the persistent disk on startup,
+# same as SalesApp.build() did for the Kivy app.
+create_inventory_file()
 
 
 @app.route("/webhook", methods=["GET"])
@@ -48,7 +56,13 @@ def webhook():
 
             print(f"From: {sender_number} | Message: {message_text}")
 
-            send_whatsapp_reply(sender_number)
+            reply_text, admin_notification = handle_message(sender_number, message_text)
+
+            if reply_text:
+                send_whatsapp_message(sender_number, reply_text)
+
+            if admin_notification:
+                send_whatsapp_message(BUSINESS_WHATSAPP_NUMBER, admin_notification)
 
     except (IndexError, KeyError, AttributeError) as e:
         print(f"Error parsing webhook payload: {e}")
@@ -56,7 +70,7 @@ def webhook():
     return "EVENT_RECEIVED", 200
 
 
-def send_whatsapp_reply(to_number):
+def send_whatsapp_message(to_number, message_text):
     headers = {
         "Authorization": f"Bearer {ACCESS_TOKEN}",
         "Content-Type": "application/json",
@@ -67,7 +81,7 @@ def send_whatsapp_reply(to_number):
         "to": to_number,
         "type": "text",
         "text": {
-            "body": "Hello! Welcome to His Life and Peace Farms. How can we help you today?"
+            "body": message_text
         },
     }
 
@@ -80,7 +94,7 @@ def send_whatsapp_reply(to_number):
 
 @app.route("/")
 def home():
-    return "His Life and Peace Farms WhatsApp Bot is running!"
+    return "His Life and Peace Farms WhatsApp Bot (with Sales Management) is running!"
 
 
 if __name__ == "__main__":
