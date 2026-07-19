@@ -9,6 +9,10 @@ VERIFY_TOKEN = "hislifepeace123"
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 
+# DEBUG
+print("ACCESS_TOKEN loaded:", ACCESS_TOKEN is not None)
+print("PHONE_NUMBER_ID:", PHONE_NUMBER_ID)
+
 WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
 
 
@@ -53,7 +57,6 @@ def webhook():
 
 
 def send_whatsapp_reply(to_number):
-    """Send a WhatsApp text message reply using the Cloud API."""
     headers = {
         "Authorization": f"Bearer {ACCESS_TOKEN}",
         "Content-Type": "application/json",
